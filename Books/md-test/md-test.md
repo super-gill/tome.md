@@ -1,6 +1,7 @@
 Document Title: Markdown Formatting Test
 Document Version: v1.0.0
 Document Date: 19/03/2026
+Document classification: Confidential
 
 # Inline Formatting
 
