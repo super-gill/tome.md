@@ -1092,8 +1092,7 @@ async function exportCurrentPolicyPdf() {
       },
       jsPDF: { unit: "mm", format: brand.pageSize, orientation: brand.orientation },
       pagebreak: {
-        mode: ["avoid-all", "css", "legacy"],
-        avoid: ["p", "li", "h1", "h2", "h3", "h4", "table", "blockquote", "pre"]
+        mode: ["css"]
       }
     };
 
@@ -1250,8 +1249,38 @@ async function exportFullManualPdf() {
       staging.appendChild(el);
       await waitForImages(el);
 
+      // Measure heading positions before capturing to canvas.
+      // - "keep zones" prevent slice boundaries from landing between a
+      //   heading and its first content sibling (H2–H5).
+      // - "force breaks" ensure H2s that follow body content (not H1)
+      //   always start on a new page.
+      const elRect = el.getBoundingClientRect();
+      const scale = 2; // must match html2canvas scale
+      const keepZones = [];
+      const forceBreaks = []; // Y positions where a new page must start
+      el.querySelectorAll("h2, h3, h4, h5").forEach(h => {
+        const hRect = h.getBoundingClientRect();
+        const top = (hRect.top - elRect.top) * scale;
+        // Extend the zone to include the first content sibling
+        let bottom = (hRect.bottom - elRect.top) * scale;
+        const sib = h.nextElementSibling;
+        if (sib) {
+          const sibRect = sib.getBoundingClientRect();
+          bottom = (sibRect.bottom - elRect.top) * scale;
+        }
+        keepZones.push({ top, bottom });
+
+        // H2s force a page break unless they directly follow an H1
+        if (h.tagName === "H2") {
+          const prev = h.previousElementSibling;
+          if (prev && prev.tagName !== "H1" && top > 0) {
+            forceBreaks.push(top);
+          }
+        }
+      });
+
       const canvas = await window.html2canvas(el, {
-        scale: 2,
+        scale,
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#ffffff",
@@ -1265,9 +1294,39 @@ async function exportFullManualPdf() {
       const pxPerMm = canvas.width / usableW;
       const sliceHeightPx = Math.floor(usableH * pxPerMm);
 
+      // Minimum slice height to prevent blank pages (10mm worth of pixels)
+      const minSlicePx = Math.floor(10 * pxPerMm);
+
       let y = 0;
       while (y < canvas.height) {
-        const sliceH = Math.min(sliceHeightPx, canvas.height - y);
+        let sliceH = Math.min(sliceHeightPx, canvas.height - y);
+
+        // Check for forced H2 breaks within this slice.
+        // Find the FIRST force break that falls inside the slice,
+        // but only if it would leave a meaningful amount of content.
+        let forcedCut = false;
+        for (const bp of forceBreaks) {
+          if (bp > y + minSlicePx && bp < y + sliceH) {
+            sliceH = Math.floor(bp - y);
+            forcedCut = true;
+            break;
+          }
+        }
+
+        // If no forced cut, check keep zones — if the slice boundary
+        // lands inside a keep zone, pull it back to before the heading,
+        // but only if the resulting slice is tall enough.
+        if (!forcedCut && y + sliceH < canvas.height) {
+          for (const zone of keepZones) {
+            if (y + sliceH > zone.top && y + sliceH < zone.bottom) {
+              const adjusted = Math.floor(zone.top - y);
+              if (adjusted >= minSlicePx) {
+                sliceH = adjusted;
+              }
+              break;
+            }
+          }
+        }
 
         const slice = document.createElement("canvas");
         slice.width = canvas.width;
@@ -1298,24 +1357,26 @@ async function exportFullManualPdf() {
       await addElementToPdf(cover);
     }
 
-    // --- CONTENT PAGES: iterate through all groups and policies ---
+    // --- CONTENT PAGES: render each group as a single block ---
+    // The entire group (H1 + all policies) is rendered as one continuous
+    // element. The keep-zone slicer handles page breaks, ensuring headings
+    // are never separated from their following content.
     for (const g of GROUPS) {
-      const groupBlock = document.createElement("div");
-      groupBlock.className = "pdf-export";
-      groupBlock.innerHTML = `<h1>${g.title}</h1>`;
-      await addElementToPdf(groupBlock);
+      pagesProcessed += g.policies.length;
+      updateExportProgress(`Exporting full manual\u2026 ${pagesProcessed} / ${totalPages} pages`);
 
+      const block = document.createElement("div");
+      block.className = "pdf-export";
+
+      let html = `<h1>${g.title}</h1>`;
       for (const p of g.policies) {
-        pagesProcessed++;
-        updateExportProgress(`Exporting full manual\u2026 ${pagesProcessed} / ${totalPages} pages`);
-
-        const block = document.createElement("div");
-        block.className = "pdf-export";
-        block.innerHTML = md.render(p.mdText);
-        resolveBookPaths(block);
-        applyIndent(block);
-        await addElementToPdf(block);
+        html += md.render(p.mdText);
       }
+      block.innerHTML = html;
+
+      resolveBookPaths(block);
+      applyIndent(block);
+      await addElementToPdf(block);
     }
 
     // --- STAMP HEADERS AND FOOTERS ON EVERY PAGE ---
