@@ -439,6 +439,9 @@ async function loadBooks() {
     BOOKS = [];
   }
 
+  // Default to the first book if none is set yet
+  if (!CURRENT_BOOK && BOOKS.length > 0) CURRENT_BOOK = BOOKS[0].file;
+
   // Populate the dropdown with available books
   if (bookPicker) {
     bookPicker.innerHTML = "";
@@ -560,7 +563,6 @@ async function init() {
   await loadBooks();
   await loadBrands();
   buildBrandPicker();
-  if (!CURRENT_BOOK && BOOKS.length > 0) CURRENT_BOOK = BOOKS[0].file;
 
   // Wait for the remainder of the minimum splash duration
   const splashMs = TOME_CONFIG.splash?.minDurationMs ?? 2000;
