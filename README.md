@@ -23,7 +23,7 @@ TOME accepts standard markdown monoliths and presents them as structured, multi-
 
 1. Clone or download the repository
 2. Add your markdown files to the `Books/` directory
-3. Register them in `books.json`:
+3. Register them in `Books/books.json`:
    ```json
    [
      {
@@ -126,15 +126,17 @@ tome.md/
 ├── index.js            # All application logic
 ├── styles.css          # Complete styling
 ├── tome.json           # Platform configuration
-├── books.json          # Book manifest
 ├── version.json        # Current version
+├── update.sh           # Platform updater (bash)
+├── update.ps1          # Platform updater (PowerShell)
 ├── libs/               # Bundled dependencies (markdown-it, html2pdf)
 ├── export-branding/    # PDF brand profiles
 │   ├── brands.json     # Brand manifest
 │   ├── default/        # Minimal (no branding)
 │   └── .../            # Additional brand profiles
-└── Books/              # Markdown content
-    └── .../            # Your documentation files
+└── Books/              # Markdown content (user data — never overwritten by updates)
+    ├── books.json      # Book manifest
+    └── .../            # Your documentation files and folders
 ```
 
 ## Deployment
@@ -147,6 +149,22 @@ TOME is fully static — deploy it anywhere that serves files:
 - Network share
 
 No build step, no Node.js, no dependencies to install.
+
+## Updating
+
+Production deployments can pull the latest platform files without affecting user data:
+
+**Bash** (macOS, Linux, Git Bash on Windows):
+```bash
+bash update.sh
+```
+
+**PowerShell** (Windows):
+```powershell
+powershell -ExecutionPolicy Bypass -File update.ps1
+```
+
+Use `--force` / `-Force` to re-download even if already up to date.
 
 ## License
 

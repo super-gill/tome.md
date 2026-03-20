@@ -88,7 +88,7 @@
         <span id="docMeta">Internal Use Only</span>
       </div>
 
-      <!-- Book selector: dropdown populated from books.json, switches between manuals -->
+      <!-- Book selector: dropdown populated from Books/books.json -->
       <div class="book-select">
         <select id="bookPicker"></select>
       </div>
@@ -362,15 +362,15 @@
       <div class="guide-accordion">
         <button class="guide-toggle" type="button">
           <span class="guide-toggle-title">Configuration</span>
-          <span class="guide-toggle-desc">books.json, tome.json, and platform settings</span>
+          <span class="guide-toggle-desc">Books/books.json, tome.json, and platform settings</span>
         </button>
         <div class="guide-body" hidden>
           <div class="settings-guide">
-            <h4>books.json</h4>
-            <p>Lists the available books. The first entry is loaded by default.</p>
+            <h4>Books/books.json</h4>
+            <p>Lists the available books. The first entry is loaded by default. This file lives inside the <code>Books/</code> directory alongside your content.</p>
             <pre>[
-  { "file": "Books/manual/manual.md", "title": "My Manual" },
-  { "file": "Books/qms/qms.md",      "title": "Quality System" }
+  { "file": "Books/my-docs/guide.md",  "title": "My Guide" },
+  { "file": "Books/handbook/handbook.md", "title": "Handbook" }
 ]</pre>
 
             <h4>tome.json</h4>
@@ -660,11 +660,18 @@
         <div class="changelog-content">
           <h3>Changelog</h3>
 
+          <h4>v2.5.0</h4>
+          <ul>
+            <li>Welcome screen shown when no books are configured, with getting-started instructions</li>
+            <li>Platform update scripts: <code>update.sh</code> (bash) and <code>update.ps1</code> (PowerShell) for one-click updates from GitHub</li>
+            <li>Moved <code>books.json</code> manifest into the <code>Books/</code> directory alongside user content</li>
+            <li>Added <code>README.md</code> with project documentation, quick start, and configuration reference</li>
+            <li>Removed external branding from platform defaults &mdash; all branding fully user-configurable</li>
+          </ul>
+
           <h4>v2.4.1</h4>
           <ul>
             <li>Fixed issue with relative path resolution for images and links</li>
-            <li>Moved books.json manifest to <code>TOME books/directory/</code></li>
-            <li>Dan was to blame</li>
           </ul>
 
           <h4>v2.4.0</h4>
@@ -758,11 +765,11 @@
             <li>Restructured Books directory: each book in its own subfolder with co-located images</li>
             <li>Print stylesheet hides all chrome, prints document content only</li>
             <li>Cache-busting via version query strings on JS and CSS</li>
-            <li>Removed all Digital Origin branding from platform code &mdash; all branding now configurable via
+            <li>Removed all external branding from platform code &mdash; all branding now configurable via
               <code>tome.json</code>
             </li>
             <li>Genericised all user-facing language from &ldquo;policy&rdquo; to &ldquo;page&rdquo;</li>
-            <li>Copyright and proprietary software notice (Jason Mcdill)</li>
+            <li>Copyright and proprietary software notice</li>
             <li>Settings button moved to meta bar (top-right) for spatial proximity to panel</li>
             <li>Default book loaded from first entry in <code>books.json</code> rather than hardcoded filename</li>
           </ul>

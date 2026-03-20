@@ -326,7 +326,7 @@ main {
 
 /* ==========================================================================
    SIDEBAR: BOOK SELECTOR
-   Dropdown to switch between different .md manuals (e.g. manual.md, qms.md).
+   Dropdown to switch between different books loaded from Books/books.json.
    ========================================================================== */
 
 .book-select {
