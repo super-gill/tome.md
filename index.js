@@ -54,7 +54,7 @@ const mainEl = document.querySelector("main");                       // Main scr
 const PLATFORM_VERSION = "v2.4.0";
 
 /** Canonical URL where the latest version.json is published */
-const VERSION_CHECK_URL = "https://super-gill.github.io/my-projects/TOME%20md/version.json";
+const VERSION_CHECK_URL = "https://super-gill.github.io/tome.md/version.json";
 
 let CURRENT_QUERY = "";       // Active search query (empty = no search)
 let CURRENT_POLICY = null;    // Currently rendered policy object
