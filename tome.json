@@ -2,7 +2,11 @@
   "branding": {
     "defaultTitle": "TOME Markdown",
     "classification": "",
-    "favicon": "digitalOranges.svg"
+    "favicon": "digitalOranges.svg",
+    "splashText": "",
+    "splashTagline": "",
+    "splashLogo": "",
+    "sidebarTitle": ""
   },
   "pdf": {
     "logo": "letterhead_logo.png",
