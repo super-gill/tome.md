@@ -1,10 +1,10 @@
 [
   {
-    "file": "Books/md-test/md-test.md",
-    "title": "Markdown Formatting Test"
-  },
-  {
     "file": "Books/recipes.md",
     "title": "My Weekly Recipes"
+  },
+  {
+    "file": "Books/spanish.md",
+    "title": "My Spanish book"
   }
 ]
