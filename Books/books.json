@@ -6,5 +6,9 @@
   {
     "file": "Books/recipes.md",
     "title": "My Weekly Recipes"
+  },
+  {
+    "file": "Books/spanish.md",
+    "title": "Spanish"
   }
 ]
