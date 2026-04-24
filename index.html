@@ -20,7 +20,7 @@
   <link id="favicon" rel="icon">
 
   <!-- Stylesheet for the app layout, sidebar, document viewer, and PDF export -->
-  <link rel="stylesheet" type="text/css" href="styles.css?v=2.7.0">
+  <link rel="stylesheet" type="text/css" href="styles.css?v=2.9.0">
 </head>
 
 <body>
@@ -73,8 +73,10 @@
     })();
   </script>
 
-  <!-- Root layout: two-column grid (sidebar | main content) -->
-  <div class="app">
+  <!-- Root layout: three-column grid (left sidebar | main content | right in-page ToC).
+       Starts in `toc-empty` so the right column is collapsed until the first page is
+       rendered; `buildRightToc` toggles this class once it knows how many sub-headings exist. -->
+  <div class="app toc-empty">
 
     <!-- ===== SIDEBAR ===== -->
     <aside>
@@ -145,6 +147,23 @@
         </div>
       </div>
     </main>
+
+    <!-- ===== RIGHT SIDEBAR: IN-PAGE TABLE OF CONTENTS ===== -->
+    <!-- Mirrors the left sidebar; populated per-page from H3/H4/H5 headings. -->
+    <!-- Hidden when the current page has too few sub-headings to warrant one. -->
+    <aside class="toc-aside" id="tocAside" aria-label="In this page">
+      <!-- Collapse button (mirror of the left sidebar's chevron). Chevron
+           points right to indicate the pane collapses toward the screen edge. -->
+      <button id="tocCollapse" class="toc-collapse-btn" type="button" title="Hide in-page contents">
+        <svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="toc-aside-title">In this page</div>
+      <nav id="tocNav" class="toc-nav"></nav>
+    </aside>
+
+    <!-- Fixed top-right hamburger to reopen the right pane once it's been
+         collapsed. Mirrors the top-left nav-hamburger; hidden by default. -->
+    <button id="tocHamburger" class="toc-hamburger" type="button" title="Show in-page contents">&#9776;</button>
   </div>
 
   <!-- Mobile nav backdrop: shown when sidebar drawer is open -->
@@ -191,6 +210,10 @@
           <button class="settings-action" data-export="manual-pdf">Full manual &rarr; PDF</button>
           <button class="settings-action" data-export="manual-md">Full manual &rarr; Markdown</button>
         </div>
+        <label class="settings-checkbox-label">
+          <input type="checkbox" id="mdContentsPage" />
+          Include contents page in Markdown export
+        </label>
       </div>
     </div>
 
@@ -283,6 +306,179 @@
               </tbody>
             </table>
             <p>Multi-line callouts work normally &mdash; just keep the <code>&gt;</code> prefix on each line. The tag only needs to appear on the first line.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Managing Books -->
+      <div class="guide-accordion">
+        <button class="guide-toggle" type="button">
+          <span class="guide-toggle-title">Managing Books</span>
+          <span class="guide-toggle-desc">Add, remove, reorder, or change the default book from one file</span>
+        </button>
+        <div class="guide-body" hidden>
+          <div class="settings-guide">
+            <p>Every book Tome knows about is declared in one central file: <code>Books/books.json</code>. It is an ordered array; the first entry is the default book on first load and entries appear in the sidebar dropdown in order.</p>
+
+            <h4>Where everything lives</h4>
+            <pre>Books/
+  books.json               &lt;-- the one file you edit to add/remove books
+  my-monolithic-book.md    &lt;-- a monolithic book (one .md file)
+  my-directory-book/       &lt;-- a directory book (folder of files)
+    Section One/
+      page-1.md
+      page-2.md
+    Diagrams/
+      chart.png</pre>
+
+            <h4>Adding a monolithic book</h4>
+            <p>A monolithic book is a single markdown file. Drop the <code>.md</code> into <code>Books/</code> (or a sub-folder) and add one entry:</p>
+            <pre>{
+  "file":  "Books/my-book.md",
+  "title": "My Book"
+}</pre>
+
+            <h4>Adding a directory book</h4>
+            <p>A directory book is a folder of markdown files organised into sub-folders. Declare it inline in <code>books.json</code> with <code>directory</code>, <code>title</code>, and <code>sections</code>:</p>
+            <pre>{
+  "directory": "Books/my-directory-book",
+  "title":     "My Directory Book",
+  "sections": [
+    {
+      "title": "Section One",
+      "pages": [
+        "page-1.md",
+        "page-2.md"
+      ]
+    },
+    {
+      "title": "Section Two",
+      "pages": [
+        { "file": "intro.md", "title": "Introduction" },
+        "details.md"
+      ]
+    }
+  ]
+}</pre>
+            <p>See the <strong>Directory-Format Books</strong> section for the full manifest schema (folder overrides, page title overrides, optional metadata, etc.).</p>
+
+            <h4>Removing a book</h4>
+            <p>Delete its entry from <code>books.json</code>. The book&rsquo;s files on disk are left alone &mdash; removing the entry just hides it from the viewer. Delete the files too if you no longer need them.</p>
+
+            <h4>Reordering books</h4>
+            <p>The order of entries in <code>books.json</code> is the order shown in the sidebar dropdown. Reorder the array to reorder the list. The first entry is loaded by default when a new user visits for the first time.</p>
+
+            <h4>Changing the default book</h4>
+            <p>Tome opens whichever book was loaded last (per-browser, via <code>localStorage</code>). On first visit, or after clearing site data, it loads the first entry in <code>books.json</code>. To change the default for new users, move that entry to position 0.</p>
+
+            <h4>Complete example</h4>
+            <pre>[
+  {
+    "file":  "Books/quick-start.md",
+    "title": "Quick Start Guide"
+  },
+  {
+    "directory": "Books/Governance",
+    "title":     "Helpdesk Operations Manual - Governance",
+    "sections": [
+      {
+        "title": "Overview",
+        "pages": [ "intro.md", "scope.md" ]
+      },
+      {
+        "title": "Policies",
+        "pages": [ "policy-1.md", "policy-2.md" ]
+      }
+    ]
+  }
+]</pre>
+            <p>After editing <code>books.json</code>, refresh the page in the browser. There is no build step.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Directory-format books -->
+      <div class="guide-accordion">
+        <button class="guide-toggle" type="button">
+          <span class="guide-toggle-title">Directory-Format Books</span>
+          <span class="guide-toggle-desc">Split a book across many files using a folder structure</span>
+        </button>
+        <div class="guide-body" hidden>
+          <div class="settings-guide">
+            <p>A book can live either as a single monolithic <code>.md</code> file or as a folder of files. Both formats are fully supported and mix freely in the same <code>Books/books.json</code> (see <strong>Managing Books</strong> for add/remove instructions).</p>
+
+            <h4>When to use which</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Format</th>
+                  <th>Good for</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Monolithic <code>.md</code></td>
+                  <td>Small books, single-author documents, when you want one file to edit and ship</td>
+                </tr>
+                <tr>
+                  <td>Directory</td>
+                  <td>Large manuals, multi-author content, when sections/pages are worked on independently</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h4>Folder structure</h4>
+            <p>The root folder is the book. Each sub-folder you list in the manifest is a section (equivalent to an H1 in a monolithic book). Each <code>.md</code> file inside a section folder is a page (equivalent to an H2 in a monolithic book). Asset folders (like <code>Diagrams/</code>) are ignored unless referenced by a page.</p>
+            <pre>Books/
+  my-book/
+    Section One/
+      page-1.md
+      page-2.md
+    Section Two/
+      overview.md
+      details.md
+    Diagrams/
+      flowchart.png</pre>
+
+            <h4>Page markdown</h4>
+            <p>Inside each page file, author the body as you would any markdown document:</p>
+            <ul>
+              <li>The <strong>first <code>#</code> heading</strong> in the file becomes the page title in the sidebar. The original H1 is stripped from the rendered view and replaced by the title.</li>
+              <li>Remaining headings are demoted one level when assembled into the book (so a page&rsquo;s <code>##</code> subsections render as H3 inside the page — they stay in the page, they do not become new pages).</li>
+              <li>All standard content (tables, code blocks, images, callouts, etc.) works exactly as in monolithic books.</li>
+            </ul>
+
+            <h4>Manifest schema</h4>
+            <p>Every directory book is declared with a manifest. The recommended place is inline in <code>Books/books.json</code> (edit one file to manage everything). Tome also accepts a <code>book.json</code> at the directory root as a fallback, which is useful when distributing a book as a portable self-contained folder.</p>
+            <pre>{
+  "directory": "Books/my-book",     // only at the books.json level
+  "title": "My Book",               // optional; defaults to folder name
+  "version": "1.0",                 // optional metadata
+  "date": "2026-04-21",             // optional
+  "classification": "Internal",     // optional
+  "sections": [
+    {
+      "title": "Section One",       // shown as the section header
+      "folder": "Section One",      // optional; defaults to title; use "" for book root
+      "pages": [
+        "page-1.md",                // shorthand - title taken from file's first H1
+        "page-2.md",
+        { "file": "page-3.md", "title": "Explicit Page Title" }
+      ]
+    },
+    {
+      "title": "Section Two",
+      "pages": [ "overview.md", "details.md" ]
+    }
+  ]
+}</pre>
+
+            <h4>Images &amp; cross-references</h4>
+            <ul>
+              <li>Relative image paths resolve against the page&rsquo;s section folder, so <code>![diagram](chart.png)</code> in a page in <code>Section One/</code> loads <code>Section One/chart.png</code>.</li>
+              <li>Use <code>../</code> to reference files in sibling folders (e.g. <code>../Diagrams/flow.png</code>).</li>
+              <li>Markdown or HTML links that target another <code>.md</code> file inside the same book are rewritten automatically to navigate within the viewer — clicking jumps to that page, it does not download the raw file.</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -474,10 +670,20 @@
         <div class="guide-body" hidden>
           <div class="settings-guide">
             <h4>Books/books.json</h4>
-            <p>Lists the available books. The first entry is loaded by default. This file lives inside the <code>Books/</code> directory alongside your content.</p>
+            <p>The single source of truth for which books appear in the viewer. An ordered array &mdash; the first entry is loaded by default on first visit, and entries appear in the sidebar dropdown in order. A <code>file</code> entry is a monolithic book; a <code>directory</code> entry with a <code>sections</code> array is a directory-format book declared inline. See <strong>Managing Books</strong> for step-by-step add/remove instructions.</p>
             <pre>[
-  { "file": "Books/my-docs/guide.md",  "title": "My Guide" },
-  { "file": "Books/handbook/handbook.md", "title": "Handbook" }
+  {
+    "file":  "Books/my-guide.md",
+    "title": "My Guide"
+  },
+  {
+    "directory": "Books/my-directory-book",
+    "title":     "Multi-File Book",
+    "sections": [
+      { "title": "Intro",    "pages": [ "01-welcome.md", "02-setup.md" ] },
+      { "title": "Policies", "pages": [ "p1.md", "p2.md" ] }
+    ]
+  }
 ]</pre>
 
             <h4>tome.json</h4>
@@ -767,6 +973,31 @@
         <div class="changelog-content">
           <h3>Changelog</h3>
 
+          <h4>v2.9.0</h4>
+          <ul>
+            <li>In-page table of contents moved into a dedicated right-side nav pane that mirrors the left sidebar&rsquo;s width and theme, so both navigation surfaces frame the main content symmetrically</li>
+            <li>Scroll-spy highlighting: the right-pane entry for the heading currently in view is highlighted and updates live as the reader scrolls through the page</li>
+            <li>Clicking any right-pane entry smooth-scrolls the main pane to that heading</li>
+            <li>Right pane is collapsible &mdash; chevron inside the pane hides it, hamburger at the top-right reopens it, state persisted to localStorage (mirrors the left sidebar)</li>
+            <li>Right pane auto-hides on pages with fewer than three sub-headings so short pages keep the full content width</li>
+            <li>Right pane is hidden below 980px (mobile) to preserve the existing single-column layout</li>
+            <li>Settings tab relocated from the top-right edge to the bottom-right edge (same pill-tab aesthetic, now pokes up from the bottom) so the top-right corner is free for the right pane&rsquo;s reopen hamburger</li>
+            <li>Back-to-top button nudged inward on desktop so it no longer overlaps the repositioned settings tab</li>
+            <li>Removed the inline &ldquo;In this page&rdquo; card that previously rendered at the top of the content area</li>
+          </ul>
+
+          <h4>v2.8.0</h4>
+          <ul>
+            <li>Directory-format books &mdash; a book can now live as a folder of markdown files instead of a single monolithic <code>.md</code>. The root folder is the book, each sub-folder is a section (H1 equivalent), and each <code>.md</code> file within a section is a page (H2 equivalent)</li>
+            <li>All book configuration is now centralised in <code>Books/books.json</code>: directory books declare their sections and pages inline alongside monolithic books, so there is one file to edit to add, remove, or reorder any book</li>
+            <li>New books.json schema: monolithic entries use <code>file</code>, directory entries use <code>directory</code> + <code>sections</code>. Existing <code>file</code>-only entries (including paths without <code>.md</code>) keep working for backwards compatibility</li>
+            <li>A directory can still carry its own <code>book.json</code> at the root as a fallback &mdash; useful for distributing a book as a portable self-contained folder &mdash; but it&rsquo;s no longer required</li>
+            <li>Each page&rsquo;s first H1 becomes its sidebar title; remaining headings in the file are demoted one level when the book is assembled, so in-page subsections never collide with page or section boundaries</li>
+            <li>Relative image paths in a directory-book page resolve against the page&rsquo;s section folder, with <code>../</code> supported for cross-folder asset references</li>
+            <li>Markdown and HTML links that target another <code>.md</code> file within the same directory book are rewritten automatically to navigate within the viewer instead of fetching the raw file</li>
+            <li>Added &ldquo;Managing Books&rdquo; and &ldquo;Directory-Format Books&rdquo; sections to Settings &rarr; Guide covering add/remove/reorder workflow and the full manifest schema</li>
+          </ul>
+
           <h4>v2.7.0</h4>
           <ul>
             <li>Deferred PDF export libraries (html2pdf, html2canvas) so they no longer block initial page render</li>
@@ -973,6 +1204,6 @@
 </body>
 
 <!-- Application logic: markdown parsing, navigation, search, PDF export -->
-<script src="index.js?v=2.7.0"></script>
+<script src="index.js?v=2.9.0"></script>
 
 </html>

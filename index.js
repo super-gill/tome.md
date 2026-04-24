@@ -44,6 +44,9 @@ const platformVersionEl = document.getElementById("platformVersion"); // Sidebar
 const themePickerEl = document.getElementById("themePicker");         // Theme picker dropdown
 const backToTopBtn = document.getElementById("backToTop");           // Back to top button
 const mainEl = document.querySelector("main");                       // Main scrollable pane
+const tocAsideEl = document.getElementById("tocAside");              // Right pane (in-page ToC)
+const tocNavEl = document.getElementById("tocNav");                  // Right pane link list
+const appEl = document.querySelector(".app");                        // Root grid container
 
 
 // ==========================================================================
@@ -113,11 +116,17 @@ function extractDocMeta(mdText) {
  * Resolves relative image and link URLs within a rendered DOM container
  * so they are relative to the book's directory rather than the page root.
  * E.g. if CURRENT_BOOK is "Books/my-docs/guide.md", an <img src="diagram.png">
- * becomes <img src="Books/my-docs/diagram.png">.
+ * becomes <img src="Books/my-docs/diagram.png">. Directory-format books
+ * (where CURRENT_BOOK points at a folder) resolve against the folder itself.
  */
 function resolveBookPaths(container) {
   if (!CURRENT_BOOK) return;
-  const bookDir = CURRENT_BOOK.substring(0, CURRENT_BOOK.lastIndexOf("/") + 1);
+  let bookDir;
+  if (/\.md$/i.test(CURRENT_BOOK)) {
+    bookDir = CURRENT_BOOK.substring(0, CURRENT_BOOK.lastIndexOf("/") + 1);
+  } else {
+    bookDir = CURRENT_BOOK.endsWith("/") ? CURRENT_BOOK : CURRENT_BOOK + "/";
+  }
   if (!bookDir) return; // Book is in root, nothing to resolve
 
   const isRelative = (url) => url && !url.startsWith("http") && !url.startsWith("//")
@@ -164,7 +173,7 @@ function processCrossBookLinks(container) {
       const [bookFolder, policyHash] = stripped.split("#");
 
       // Find matching book by folder name
-      const targetBook = BOOKS.find((b) => b.file.includes(bookFolder));
+      const targetBook = BOOKS.find((b) => b.path.includes(bookFolder));
       if (!targetBook) {
         alert(`Book not found: ${bookFolder}`);
         return;
@@ -179,7 +188,7 @@ function processCrossBookLinks(container) {
       };
 
       // Switch book and navigate
-      CURRENT_BOOK = targetBook.file;
+      CURRENT_BOOK = targetBook.path;
       localStorage.setItem("tome-book", CURRENT_BOOK);
       if (bookPicker) bookPicker.value = CURRENT_BOOK;
       await loadBook(CURRENT_BOOK);
@@ -354,8 +363,27 @@ function parseManual(markdown) {
     currentPolicy = null;
   };
 
+  // Track fenced code blocks so `# something` or `## something` used inside
+  // a code example is NOT mistaken for a real heading (e.g. an authoring guide
+  // that demonstrates markdown heading syntax inside a ``` block).
+  let inFence = false;
+  let fenceMarker = "";
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    const fenceMatch = /^\s*(```|~~~)/.exec(line);
+    if (fenceMatch) {
+      const token = fenceMatch[1];
+      if (!inFence) { inFence = true; fenceMarker = token; }
+      else if (fenceMarker === token) { inFence = false; fenceMarker = ""; }
+      if (currentPolicy) currentPolicy.mdText += line + "\n";
+      continue;
+    }
+    if (inFence) {
+      if (currentPolicy) currentPolicy.mdText += line + "\n";
+      continue;
+    }
 
     const h1 = /^#\s+(.+?)\s*$/.exec(line);
     const h2 = /^##\s+(.+?)\s*$/.exec(line);
@@ -454,17 +482,285 @@ async function loadConfig() {
 }
 
 /**
- * Fetches a markdown file relative to the current page URL.
- * Uses cache-busting to ensure the latest version is always loaded.
+ * Fetches the markdown for a book. A book is either:
+ *   - a single monolithic .md file (path ends in .md), or
+ *   - a directory whose sections/pages are declared either inline in
+ *     Books/books.json or in a book.json inside the directory itself.
+ * Directory books are compiled into an equivalent synthetic markdown string
+ * in memory so parser, nav, search, and export all work unchanged.
  */
 async function loadManualMd(filename) {
   const file = filename || CURRENT_BOOK;
-  const url = new URL(file, document.baseURI);
-  console.log("Loading book from:", url.href, "page:", location.href);
+  console.log("Loading book from:", file);
 
+  if (isDirectoryBook(file)) {
+    // If the books.json entry carries an inline manifest, use it directly;
+    // otherwise fall back to fetching book.json from the directory.
+    const entry = BOOKS.find((b) => b.path === file) || null;
+    const inline = entry && Array.isArray(entry.sections) ? entry : null;
+    return await loadManualFromDirectory(file, inline);
+  }
+
+  const url = new URL(file, document.baseURI);
   const res = await fetch(url.href, { cache: "default" });
   if (!res.ok) throw new Error(`Failed to load ${url.href} (${res.status} ${res.statusText})`);
   return await res.text();
+}
+
+// ==========================================================================
+// DIRECTORY-FORMAT BOOK SUPPORT
+// Lets a book live as a folder of markdown files instead of one monolithic
+// file. Because static hosting (e.g. GitHub Pages) cannot list directories,
+// each directory book carries a lightweight book.json manifest that names
+// its sections (sub-folders) and pages (files in order).
+//
+// The manifest is compiled into a synthetic monolithic markdown string that
+// feeds the existing parseManual() pipeline, so every downstream feature
+// (search, PDF export, full-manual export, cross-book links) works
+// identically to a monolithic book with no changes required.
+// ==========================================================================
+
+/** True if the books.json `file` entry points at a directory (anything not ending in .md). */
+function isDirectoryBook(filePath) {
+  return !/\.md$/i.test((filePath || "").replace(/\/$/, ""));
+}
+
+/**
+ * Compiles a directory book into a synthetic monolithic markdown string.
+ * The manifest can be supplied inline (from Books/books.json) or — for
+ * books authored as portable self-contained folders — fetched from a
+ * book.json file inside the directory.
+ *
+ * Manifest schema (all fields optional unless noted):
+ *   {
+ *     "title":          "Book title" (defaults to the folder name),
+ *     "version":        "1.0",
+ *     "date":           "2026-04-21",
+ *     "classification": "Internal Use Only",
+ *     "sections": [
+ *       {
+ *         "title":  "Section title" (required; shown as H1 in nav),
+ *         "folder": "subfolder"     (optional; defaults to title; use "" for the book root),
+ *         "pages":  [
+ *           "filename.md"                              // shorthand (title taken from file's first H1)
+ *           { "file": "filename.md", "title": "..." }  // explicit title override
+ *         ]
+ *       }
+ *     ]
+ *   }
+ */
+async function loadManualFromDirectory(dirPath, inlineManifest) {
+  const base = dirPath.replace(/\/$/, "");
+
+  let manifest;
+  if (inlineManifest && Array.isArray(inlineManifest.sections)) {
+    // Inline manifest from Books/books.json — no extra fetch required.
+    manifest = inlineManifest;
+  } else {
+    // Fallback: fetch a book.json bundled inside the directory.
+    const manifestUrl = new URL(`${base}/book.json`, document.baseURI);
+    const mRes = await fetch(manifestUrl.href, { cache: "default" });
+    if (!mRes.ok) {
+      throw new Error(`No inline manifest in Books/books.json and ${manifestUrl.href} is missing (${mRes.status} ${mRes.statusText}). Declare the book's sections/pages inline or add a book.json inside the directory.`);
+    }
+    manifest = await mRes.json();
+  }
+
+  const bookTitle = manifest.title || base.split("/").filter(Boolean).pop() || "Manual";
+
+  // --- Pass 1: fetch every page and determine its title, so we can build a
+  //     lookup from "section-folder/filename" to the #slug the parser will
+  //     produce. This is what lets intra-book <a href="other-page.md"> links
+  //     be rewritten to viewer anchors instead of raw file fetches.
+  const sections = [];
+  const linkSlugMap = new Map();
+
+  for (const section of manifest.sections || []) {
+    const sectionTitle = section.title || section.folder || "";
+    const sectionFolder = section.folder !== undefined ? section.folder : sectionTitle;
+    const pages = [];
+
+    for (const pageRaw of section.pages || []) {
+      const pageFile = typeof pageRaw === "string" ? pageRaw : pageRaw?.file;
+      const explicitTitle = (pageRaw && typeof pageRaw === "object") ? pageRaw.title : null;
+      if (!pageFile) continue;
+
+      const relPath = sectionFolder ? `${sectionFolder}/${pageFile}` : pageFile;
+      const pageUrl = new URL(`${base}/${relPath}`, document.baseURI);
+
+      let mdText = "";
+      try {
+        const pRes = await fetch(pageUrl.href, { cache: "default" });
+        if (pRes.ok) mdText = await pRes.text();
+        else console.warn(`Directory-book page missing: ${pageUrl.href} (${pRes.status})`);
+      } catch (e) {
+        console.warn(`Failed to fetch ${pageUrl.href}:`, e);
+      }
+
+      // Resolve page title: manifest override > file's first H1 > humanised filename
+      let pageTitle = explicitTitle || null;
+      if (!pageTitle) {
+        const h1 = /^#\s+(.+?)\s*$/m.exec(mdText);
+        if (h1) pageTitle = h1[1].trim();
+      }
+      if (!pageTitle) pageTitle = pageFile.replace(/\.md$/i, "").replace(/[-_]+/g, " ").trim();
+
+      // Pre-compute the slug parseManual() will assign so links can target it.
+      // Mirror the parser's collision-suffixing (-2, -3, …) by tracking already-used slugs.
+      const baseSlug = slugify(`${sectionTitle} ${pageTitle}`) || `h2-${sections.length + 1}-${pages.length + 1}`;
+      let finalSlug = baseSlug;
+      let n = 2;
+      const used = new Set(linkSlugMap.values());
+      while (used.has(finalSlug)) finalSlug = `${baseSlug}-${n++}`;
+      linkSlugMap.set(relPath, finalSlug);
+
+      pages.push({ file: pageFile, title: pageTitle, mdText, sectionFolder });
+    }
+
+    sections.push({ title: sectionTitle, folder: sectionFolder, pages });
+  }
+
+  // --- Pass 2: assemble the synthetic monolithic markdown.
+  const meta = [];
+  meta.push(`Document Title: ${bookTitle}`);
+  if (manifest.version) meta.push(`Document Version: ${manifest.version}`);
+  if (manifest.date) meta.push(`Document Date: ${manifest.date}`);
+  if (manifest.classification) meta.push(`Document Classification: ${manifest.classification}`);
+
+  let out = meta.join("\n") + "\n\n";
+  for (const section of sections) {
+    out += `# ${section.title}\n\n`;
+    for (const page of section.pages) {
+      out += compileDirectoryPage(page, linkSlugMap) + "\n\n";
+    }
+  }
+  return out;
+}
+
+/**
+ * Transforms one page file into a chunk suitable for concatenation into
+ * the synthetic manual:
+ *   - Replaces the file's first H1 with a new H2 carrying the page title
+ *     (so the existing parser sees it as a page boundary).
+ *   - Demotes remaining headings by one level (H2→H3, H3→H4, …, H6 clamped),
+ *     floored at H3 so no nested heading accidentally introduces a new page
+ *     or section boundary.
+ *   - Prefixes relative image/link paths with the section folder and
+ *     percent-encodes spaces so they resolve correctly after
+ *     resolveBookPaths() applies the book-root prefix.
+ *   - Rewrites links that target another .md file in the same book to the
+ *     viewer's #slug anchor for that page.
+ */
+function compileDirectoryPage(page, linkSlugMap) {
+  const { title, mdText, sectionFolder } = page;
+  const lines = (mdText || "").replace(/\r\n/g, "\n").split("\n");
+
+  // Drop everything up to and including the first H1. Body after it becomes
+  // the page body; the manifest title replaces the original H1.
+  let firstH1 = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^#\s+/.test(lines[i])) { firstH1 = i; break; }
+  }
+  const body = firstH1 >= 0 ? lines.slice(firstH1 + 1) : lines.slice();
+
+  const out = [`## ${title}`, ""];
+  let inFence = false;
+  let fenceMarker = "";
+
+  for (const raw of body) {
+    const fenceMatch = /^\s*(```|~~~)/.exec(raw);
+    if (fenceMatch) {
+      const token = fenceMatch[1];
+      if (!inFence) { inFence = true; fenceMarker = token; }
+      else if (fenceMarker === token) { inFence = false; fenceMarker = ""; }
+      out.push(raw);
+      continue;
+    }
+    if (inFence) { out.push(raw); continue; }
+
+    let line = raw;
+    const hm = /^(#{1,6})(\s+.+)$/.exec(line);
+    if (hm) {
+      const newLevel = Math.min(6, Math.max(3, hm[1].length + 1));
+      line = "#".repeat(newLevel) + hm[2];
+    }
+    line = rewriteDirectoryPageRefs(line, sectionFolder, linkSlugMap);
+    out.push(line);
+  }
+
+  return out.join("\n");
+}
+
+/**
+ * Rewrites image/link targets in one line of a directory-book page.
+ *   - Absolute, hash, mailto, data, and tome:// URLs are left alone.
+ *   - Links whose target resolves to another .md file in the same book
+ *     are replaced with the #slug anchor for that page.
+ *   - Everything else is joined to the section folder (so resolveBookPaths
+ *     can prefix the book root), with spaces percent-encoded.
+ */
+function rewriteDirectoryPageRefs(line, sectionFolder, linkSlugMap) {
+  const isAbsoluteOrSpecial = (url) =>
+    /^(https?:|\/\/|\/|#|data:|tome:|mailto:)/i.test(url);
+
+  // Resolve a relative URL into a "sectionFolder/filename" key, applying
+  // any ../ segments against the source page's section folder. Returns null
+  // if the URL is not an .md file or escapes above the book root.
+  const resolveIntraBook = (url) => {
+    const hashIdx = url.indexOf("#");
+    const pathPart = hashIdx >= 0 ? url.slice(0, hashIdx) : url;
+    if (!/\.md$/i.test(pathPart)) return null;
+
+    const folderParts = sectionFolder ? sectionFolder.split("/").filter(Boolean) : [];
+    const pathParts = pathPart.split("/").filter((p) => p !== "" && p !== ".");
+    const stack = [...folderParts];
+    for (const p of pathParts) {
+      if (p === "..") {
+        if (stack.length === 0) return null;
+        stack.pop();
+      } else {
+        stack.push(p);
+      }
+    }
+    return stack.join("/");
+  };
+
+  const rewrite = (url) => {
+    if (!url) return url;
+    if (isAbsoluteOrSpecial(url)) return url;
+
+    const resolved = resolveIntraBook(url);
+    if (resolved && linkSlugMap.has(resolved)) {
+      return `#${linkSlugMap.get(resolved)}`;
+    }
+
+    const joined = sectionFolder ? `${sectionFolder}/${url}` : url;
+    return joined.replace(/ /g, "%20");
+  };
+
+  // Markdown images: ![alt](url "optional title")
+  line = line.replace(
+    /!\[([^\]]*)\]\(([^)\s]+)((?:\s+"[^"]*")?)\)/g,
+    (_, alt, url, title) => `![${alt}](${rewrite(url)}${title || ""})`
+  );
+
+  // Markdown links: [text](url "optional title") — exclude the image form
+  line = line.replace(
+    /(^|[^!])\[([^\]]*)\]\(([^)\s]+)((?:\s+"[^"]*")?)\)/g,
+    (_, before, text, url, title) => `${before}[${text}](${rewrite(url)}${title || ""})`
+  );
+
+  // HTML <img src="…"> and <a href="…"> (both ASCII quote styles)
+  line = line.replace(
+    /(<img\s[^>]*\bsrc\s*=\s*)(["'])([^"']+)\2/gi,
+    (_, pre, q, url) => `${pre}${q}${rewrite(url)}${q}`
+  );
+  line = line.replace(
+    /(<a\s[^>]*\bhref\s*=\s*)(["'])([^"']+)\2/gi,
+    (_, pre, q, url) => `${pre}${q}${rewrite(url)}${q}`
+  );
+
+  return line;
 }
 
 /**
@@ -580,10 +876,17 @@ async function loadBooks() {
     BOOKS = [];
   }
 
+  // Normalize each entry to have a canonical `path` property.
+  // Supported shapes: { file: "Books/foo.md" }  |  { file: "Books/foo" }  |  { directory: "Books/foo" }
+  // The rest of the entry (title, sections, version, ...) is preserved.
+  BOOKS = (Array.isArray(BOOKS) ? BOOKS : [])
+    .map((b) => ({ ...b, path: b.path || b.file || b.directory || "" }))
+    .filter((b) => b.path);
+
   // Restore last-viewed book, or default to the first book
   if (!CURRENT_BOOK && BOOKS.length > 0) {
     const saved = localStorage.getItem("tome-book");
-    CURRENT_BOOK = (saved && BOOKS.some((b) => b.file === saved)) ? saved : BOOKS[0].file;
+    CURRENT_BOOK = (saved && BOOKS.some((b) => b.path === saved)) ? saved : BOOKS[0].path;
   }
 
   // Populate the dropdown with available books
@@ -591,7 +894,7 @@ async function loadBooks() {
     bookPicker.innerHTML = "";
     for (const book of BOOKS) {
       const opt = document.createElement("option");
-      opt.value = book.file;
+      opt.value = book.path;
       opt.textContent = book.title;
       bookPicker.appendChild(opt);
     }
@@ -653,6 +956,8 @@ function showWelcome() {
   if (metaEl) metaEl.textContent = "";
   if (navEl) navEl.innerHTML = "";
   if (bookPicker) bookPicker.style.display = "none";
+  // Collapse the right ToC pane — there's no page content to build one from.
+  if (typeof resetRightToc === "function") resetRightToc();
   if (viewEl) {
     viewEl.innerHTML = `
       <div style="max-width:600px;margin:40px auto;line-height:1.7">
@@ -660,17 +965,16 @@ function showWelcome() {
         <p>Tome is running, but there are no books configured yet.</p>
         <h3 style="margin-top:24px">Getting started</h3>
         <ol>
-          <li>Create a folder inside <code>Books/</code> for your document</li>
-          <li>Add a markdown file (e.g. <code>Books/my-docs/guide.md</code>)</li>
+          <li>Add a markdown file (e.g. <code>Books/my-docs/guide.md</code>), or a folder of files for a directory book</li>
           <li>Register it in <code>Books/books.json</code>:</li>
         </ol>
 <pre>[
   { "file": "Books/my-docs/guide.md", "title": "My Guide" }
 ]</pre>
-        <ol start="4">
+        <ol start="3">
           <li>Refresh this page</li>
         </ol>
-        <p>See the <strong>Guide</strong> tab in Settings for authoring and configuration details.</p>
+        <p>See the <strong>Managing Books</strong> and <strong>Directory-Format Books</strong> sections in the Guide tab for the full schema.</p>
       </div>`;
   }
 }
@@ -988,6 +1292,10 @@ function highlightIn(container, query) {
 function renderPolicy(id) {
   const policy = POLICY_INDEX.get(id);
 
+  // Clear the right-pane ToC up-front so stale entries from the previous
+  // page don't linger if we take an early-return path below.
+  resetRightToc();
+
   // --- Broken hash fallback ---
   if (id && !policy && ALL_POLICIES.length > 0) {
     if (metaEl) metaEl.textContent = "";
@@ -1044,41 +1352,8 @@ function renderPolicy(id) {
       h2El.appendChild(linkIcon);
     }
 
-    // --- In-policy table of contents (H3/H4/H5) ---
-    const subHeadings = viewEl.querySelectorAll("h3, h4, h5");
-    if (subHeadings.length >= 3) {
-      const toc = document.createElement("nav");
-      toc.className = "policy-toc";
-
-      const tocTitle = document.createElement("div");
-      tocTitle.className = "policy-toc-title";
-      tocTitle.textContent = "In this page";
-      toc.appendChild(tocTitle);
-
-      for (const heading of subHeadings) {
-        const level = heading.tagName[1]; // "3", "4", or "5"
-        const anchor = heading.id || slugify(heading.textContent);
-        if (!heading.id) heading.id = anchor;
-
-        const link = document.createElement("a");
-        link.href = `#`;
-        link.textContent = heading.textContent;
-        link.dataset.level = level;
-        link.addEventListener("click", (e) => {
-          e.preventDefault();
-          heading.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-        toc.appendChild(link);
-      }
-
-      // Insert after the H2 heading
-      const firstH2 = viewEl.querySelector("h2");
-      if (firstH2 && firstH2.nextSibling) {
-        viewEl.insertBefore(toc, firstH2.nextSibling);
-      } else {
-        viewEl.prepend(toc);
-      }
-    }
+    // --- In-page table of contents (H3/H4/H5) rendered into the right sidebar ---
+    buildRightToc(viewEl);
   }
 
   // Update breadcrumb: "H1 Section > H2 Policy"
@@ -1093,6 +1368,114 @@ function renderPolicy(id) {
   // Scroll main content to top when switching policies
   if (mainEl) mainEl.scrollTop = 0;
 }
+
+// ==========================================================================
+// RIGHT-PANE IN-PAGE TABLE OF CONTENTS + SCROLL SPY
+// Populates the right sidebar with an ordered list of the current page's
+// H3/H4/H5 headings, and highlights the one the reader is currently viewing
+// as they scroll through the main pane.
+// ==========================================================================
+
+/** Minimum number of sub-headings on a page before we show the right pane. */
+const TOC_MIN_HEADINGS = 3;
+
+/** Cache of { link, heading } pairs for the current page's ToC. */
+let TOC_ITEMS = [];
+/** rAF handle used to throttle scroll-spy updates. */
+let tocScrollRaf = null;
+
+/**
+ * Clears the right-pane ToC and collapses the column. Called on every
+ * navigation so pages with no ToC (welcome, broken hash, short pages)
+ * never inherit the previous page's entries.
+ */
+function resetRightToc() {
+  if (tocNavEl) tocNavEl.innerHTML = "";
+  TOC_ITEMS = [];
+  appEl?.classList.add("toc-empty");
+}
+
+/**
+ * Rebuilds the right-pane ToC from the headings currently rendered in
+ * viewEl. Hides the pane (by collapsing the grid column) when there are
+ * fewer than TOC_MIN_HEADINGS sub-headings, so short pages get the full
+ * content width.
+ */
+function buildRightToc(root) {
+  if (!tocNavEl) return;
+
+  tocNavEl.innerHTML = "";
+  TOC_ITEMS = [];
+
+  const subHeadings = Array.from(root.querySelectorAll("h3, h4, h5"));
+
+  if (subHeadings.length < TOC_MIN_HEADINGS) {
+    appEl?.classList.add("toc-empty");
+    return;
+  }
+  appEl?.classList.remove("toc-empty");
+
+  for (const heading of subHeadings) {
+    const level = heading.tagName[1]; // "3" | "4" | "5"
+    // Ensure the heading has an id so the link can target it
+    const anchor = heading.id || slugify(heading.textContent);
+    if (!heading.id) heading.id = anchor;
+
+    const link = document.createElement("a");
+    link.href = `#${anchor}`;
+    link.textContent = heading.textContent;
+    link.dataset.level = level;
+    link.dataset.targetId = anchor;
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      heading.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    tocNavEl.appendChild(link);
+    TOC_ITEMS.push({ link, heading });
+  }
+
+  // Paint the initial active state without waiting for a scroll event.
+  updateTocActive();
+}
+
+/**
+ * Scroll-spy: marks the nav item matching the heading nearest the top of
+ * the main scroll pane as active. The "top" is offset slightly so a heading
+ * is considered current once it has scrolled past the sticky width bar.
+ */
+function updateTocActive() {
+  if (!tocNavEl || !mainEl || TOC_ITEMS.length === 0) return;
+
+  const mainTop = mainEl.getBoundingClientRect().top;
+  // Offset in px from the top of the main pane at which a heading flips to
+  // "active". Kept slightly below the sticky width toggle so the highlight
+  // updates when a heading scrolls under it, not just when it disappears.
+  const activationOffset = 120;
+
+  let activeId = TOC_ITEMS[0].heading.id;
+  for (const { heading } of TOC_ITEMS) {
+    const offsetFromMainTop = heading.getBoundingClientRect().top - mainTop;
+    if (offsetFromMainTop <= activationOffset) activeId = heading.id;
+    else break;
+  }
+
+  for (const { link } of TOC_ITEMS) {
+    link.classList.toggle("active", link.dataset.targetId === activeId);
+  }
+}
+
+/** rAF-throttled scroll handler wired to the main pane. */
+function onMainScrollForToc() {
+  if (tocScrollRaf) return;
+  tocScrollRaf = requestAnimationFrame(() => {
+    tocScrollRaf = null;
+    updateTocActive();
+  });
+}
+
+if (mainEl) mainEl.addEventListener("scroll", onMainScrollForToc, { passive: true });
+window.addEventListener("resize", onMainScrollForToc, { passive: true });
 
 // ==========================================================================
 // PDF EXPORT: SHARED UTILITIES
@@ -1203,6 +1586,7 @@ async function exportCurrentPolicyPdf() {
     if (document.fonts?.ready) {
       try { await document.fonts.ready; } catch { /* ignore */ }
     }
+    host.querySelectorAll('img[loading="lazy"]').forEach(img => img.removeAttribute("loading"));
     await waitForImages(host);
 
     // Generate a safe filename from the policy title
@@ -1394,9 +1778,18 @@ async function exportFullManualPdf() {
      * Renders a DOM element to a canvas, slices the canvas into
      * page-height strips, and appends each strip as a new page
      * in the master PDF document.
+     *
+     * @param {HTMLElement} el - The element to render.
+     * @param {Function} [measureFn] - Optional callback invoked after the
+     *   element is in the DOM but before canvas capture. Receives
+     *   (el, elRect, scale) and can return arbitrary measurement data.
+     * @returns {{ measured, slices: {yStart,yEnd,pageNum}[], pxPerMm }}
      */
-    async function addElementToPdf(el) {
+    async function addElementToPdf(el, measureFn) {
       staging.appendChild(el);
+      // Force eager loading — lazy images in an off-screen container
+      // are deferred by the browser and never fire their load event.
+      el.querySelectorAll('img[loading="lazy"]').forEach(img => img.removeAttribute("loading"));
       await waitForImages(el);
 
       // Measure heading positions before capturing to canvas.
@@ -1429,6 +1822,9 @@ async function exportFullManualPdf() {
         }
       });
 
+      // Allow caller to measure DOM positions before canvas capture
+      const measured = measureFn ? measureFn(el, elRect, scale) : null;
+
       const canvas = await window.html2canvas(el, {
         scale,
         useCORS: true,
@@ -1439,7 +1835,9 @@ async function exportFullManualPdf() {
 
       staging.removeChild(el);
 
-      if (canvas.width === 0 || canvas.height === 0) return;
+      if (canvas.width === 0 || canvas.height === 0) {
+        return { measured, slices: [], pxPerMm: 0 };
+      }
 
       const pxPerMm = canvas.width / usableW;
       const sliceHeightPx = Math.floor(usableH * pxPerMm);
@@ -1447,6 +1845,7 @@ async function exportFullManualPdf() {
       // Minimum slice height to prevent blank pages (10mm worth of pixels)
       const minSlicePx = Math.floor(10 * pxPerMm);
 
+      const slices = [];
       let y = 0;
       while (y < canvas.height) {
         let sliceH = Math.min(sliceHeightPx, canvas.height - y);
@@ -1491,11 +1890,31 @@ async function exportFullManualPdf() {
         const sliceHmm = (sliceH / canvas.width) * usableW;
 
         if (!firstPage) pdf.addPage();
+        const pageNum = pdf.internal.getNumberOfPages();
         pdf.addImage(imgData, "JPEG", mLeft, mTop, usableW, sliceHmm);
         firstPage = false;
 
+        slices.push({ yStart: y, yEnd: y + sliceH, pageNum });
         y += sliceH;
       }
+
+      return { measured, slices, pxPerMm };
+    }
+
+    /**
+     * Maps a canvas-pixel Y position to the PDF page and Y offset (mm)
+     * it falls on, using the slice boundaries from addElementToPdf.
+     */
+    function resolveCanvasY(slices, canvasY, pxPerMm) {
+      for (const s of slices) {
+        if (canvasY >= s.yStart && canvasY < s.yEnd) {
+          return { page: s.pageNum, yMm: mTop + ((canvasY - s.yStart) / pxPerMm) };
+        }
+      }
+      const last = slices[slices.length - 1];
+      return last
+        ? { page: last.pageNum, yMm: mTop + ((canvasY - last.yStart) / pxPerMm) }
+        : null;
     }
 
     // --- COVER PAGE ---
@@ -1507,11 +1926,55 @@ async function exportFullManualPdf() {
       await addElementToPdf(cover);
     }
 
+    // --- CONTENTS PAGE (if enabled) ---
+    const includeToc = document.getElementById("mdContentsPage")?.checked;
+    let tocEntryPositions = [];  // { canvasY, groupIdx }
+    let tocSlices = [];
+    let tocPxPerMm = 0;
+    const groupStartPages = [];  // page number where each group begins
+    const backLinkPositions = []; // { page, yMm } for each group's "Back to Contents"
+
+    if (includeToc) {
+      const tocEl = document.createElement("div");
+      tocEl.className = "pdf-export";
+      let tocHtml = "<h1>Contents</h1>";
+      GROUPS.forEach((g, gi) => {
+        tocHtml += `<p data-toc-group="${gi}" style="margin:0 0 2px 0;font-weight:700;">${g.title}</p>`;
+        tocHtml += "<ul style=\"margin:0 0 8px 0;padding-left:20px;\">";
+        for (const p of g.policies) {
+          tocHtml += `<li style="margin:0 0 1px 0;">${p.title}</li>`;
+        }
+        tocHtml += "</ul>";
+      });
+      tocEl.innerHTML = tocHtml;
+
+      const tocResult = await addElementToPdf(tocEl, (el, elRect, scale) => {
+        const entries = [];
+        el.querySelectorAll("[data-toc-group]").forEach(node => {
+          const r = node.getBoundingClientRect();
+          // Measure the full group entry: from the H1 title to the end of its UL
+          const ul = node.nextElementSibling;
+          const bottom = ul ? ul.getBoundingClientRect().bottom : r.bottom;
+          entries.push({
+            groupIdx: parseInt(node.dataset.tocGroup, 10),
+            top: (r.top - elRect.top) * scale,
+            bottom: (bottom - elRect.top) * scale
+          });
+        });
+        return entries;
+      });
+
+      tocSlices = tocResult.slices;
+      tocPxPerMm = tocResult.pxPerMm;
+      tocEntryPositions = tocResult.measured || [];
+    }
+
     // --- CONTENT PAGES: render each group as a single block ---
     // The entire group (H1 + all policies) is rendered as one continuous
     // element. The keep-zone slicer handles page breaks, ensuring headings
     // are never separated from their following content.
-    for (const g of GROUPS) {
+    for (let gi = 0; gi < GROUPS.length; gi++) {
+      const g = GROUPS[gi];
       pagesProcessed += g.policies.length;
       updateExportProgress(`Exporting full manual\u2026 ${pagesProcessed} / ${totalPages} pages`);
 
@@ -1522,12 +1985,62 @@ async function exportFullManualPdf() {
       for (const p of g.policies) {
         html += md.render(p.mdText);
       }
+      if (includeToc) {
+        html += '<div data-back-to-contents style="margin:24px 0 0 0;padding:8px 0;border-top:1px solid #ddd;font-size:13px;"><span style="color:#0645ad;text-decoration:underline;cursor:pointer;">&#8592; Back to Contents</span></div>';
+      }
       block.innerHTML = html;
 
       resolveBookPaths(block);
       processCallouts(block);
       applyIndent(block);
-      await addElementToPdf(block);
+
+      const groupResult = await addElementToPdf(block, (el, elRect, scale) => {
+        const backEl = el.querySelector("[data-back-to-contents]");
+        return backEl
+          ? { backY: (backEl.getBoundingClientRect().top - elRect.top) * scale,
+              backH: (backEl.getBoundingClientRect().height) * scale }
+          : null;
+      });
+
+      // Record first page of this group
+      if (groupResult.slices.length) {
+        groupStartPages[gi] = groupResult.slices[0].pageNum;
+      }
+
+      // Resolve "Back to Contents" link position
+      if (includeToc && groupResult.measured && groupResult.slices.length) {
+        const resolved = resolveCanvasY(groupResult.slices, groupResult.measured.backY, groupResult.pxPerMm);
+        if (resolved) {
+          const linkH = groupResult.measured.backH / groupResult.pxPerMm;
+          backLinkPositions.push({ page: resolved.page, yMm: resolved.yMm, hMm: linkH });
+        }
+      }
+    }
+
+    // --- STAMP INTERNAL LINKS ---
+    // TOC entries link to their group's first page;
+    // "Back to Contents" links point back to the first TOC page.
+    if (includeToc) {
+      const tocFirstPage = tocSlices.length ? tocSlices[0].pageNum : 1;
+
+      // TOC → group links
+      for (const entry of tocEntryPositions) {
+        const targetPage = groupStartPages[entry.groupIdx];
+        if (!targetPage) continue;
+        const top = resolveCanvasY(tocSlices, entry.top, tocPxPerMm);
+        const bottom = resolveCanvasY(tocSlices, entry.bottom, tocPxPerMm);
+        if (!top) continue;
+        // Link may span a single page; use top's page
+        const linkH = (bottom ? bottom.yMm - top.yMm : 10);
+        pdf.setPage(top.page);
+        pdf.link(mLeft, top.yMm, usableW, Math.max(linkH, 5), { pageNumber: targetPage });
+      }
+
+      // "Back to Contents" → TOC page links
+      for (const bl of backLinkPositions) {
+        pdf.setPage(bl.page);
+        pdf.link(mLeft, bl.yMm, usableW, Math.max(bl.hMm || 5, 5), { pageNumber: tocFirstPage });
+      }
     }
 
     // --- STAMP HEADERS AND FOOTERS ON EVERY PAGE ---
@@ -1618,11 +2131,64 @@ async function exportFullManualMd() {
     const docTitle = (document.getElementById("docTitle")?.textContent || "manual").trim();
     const safeName = docTitle
       .replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim().slice(0, 140) || "manual";
-    downloadText(`${safeName}.md`, mdText);
+
+    const includeContents = document.getElementById("mdContentsPage")?.checked;
+    if (includeContents && GROUPS?.length) {
+      downloadText(`${safeName}.md`, injectMdContentsPage(mdText, GROUPS));
+    } else {
+      downloadText(`${safeName}.md`, mdText);
+    }
   } catch (e) {
     console.error(e);
     alert(`Failed to export: ${e.message}`);
   }
+}
+
+/**
+ * Injects a Contents H1 into the raw markdown and adds "Back to Contents"
+ * links before every H2 heading. The contents page is inserted after the
+ * document metadata block but before the first H1.
+ */
+function injectMdContentsPage(mdText, groups) {
+  const lines = mdText.replace(/\r\n/g, "\n").split("\n");
+
+  // Build the TOC block
+  let toc = "# Contents\n\n";
+  for (const g of groups) {
+    const h1Anchor = slugify(g.title);
+    toc += `- [${g.title}](#${h1Anchor})\n`;
+    for (const p of g.policies) {
+      const h2Anchor = slugify(p.title);
+      toc += `  - [${p.title}](#${h2Anchor})\n`;
+    }
+  }
+
+  // Find insertion point: after metadata, before first H1
+  const metaPattern = /^Document\s+(Title|Version|Date|Classification):\s*/i;
+  let insertAt = 0;
+  for (let i = 0; i < Math.min(lines.length, 20); i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith("#")) break;
+    if (metaPattern.test(trimmed) || trimmed === "") {
+      insertAt = i + 1;
+      continue;
+    }
+    break;
+  }
+
+  // Insert TOC after metadata
+  lines.splice(insertAt, 0, "", toc, "---", "");
+
+  // Add "Back to Contents" link before every H2
+  const result = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (/^##\s+/.test(lines[i])) {
+      result.push("[Back to Contents](#contents)", "");
+    }
+    result.push(lines[i]);
+  }
+
+  return result.join("\n");
 }
 
 // ==========================================================================
@@ -1806,7 +2372,6 @@ function closeDrawer() {
 }
 
 if (navHamburger) navHamburger.addEventListener("click", () => {
-  const appEl = document.querySelector(".app");
   // Desktop: toggle sidebar collapse; Mobile: open drawer
   if (appEl?.classList.contains("sidebar-collapsed")) {
     appEl.classList.remove("sidebar-collapsed");
@@ -1833,7 +2398,6 @@ if (navEl) {
 // ==========================================================================
 
 const sidebarCollapseBtn = document.getElementById("sidebarCollapse");
-const appEl = document.querySelector(".app");
 
 if (sidebarCollapseBtn && appEl) {
   sidebarCollapseBtn.addEventListener("click", () => {
@@ -1845,6 +2409,36 @@ if (sidebarCollapseBtn && appEl) {
   if (localStorage.getItem("tome-sidebar") === "collapsed") {
     appEl.classList.add("sidebar-collapsed");
   }
+}
+
+// ==========================================================================
+// RIGHT-PANE (IN-PAGE ToC) COLLAPSE (DESKTOP)
+// Mirror of the left sidebar collapse: internal chevron to hide, fixed
+// top-right hamburger to reopen. State persists across pages & sessions.
+// ==========================================================================
+
+const tocCollapseBtn = document.getElementById("tocCollapse");
+const tocHamburger = document.getElementById("tocHamburger");
+
+if (tocCollapseBtn && appEl) {
+  tocCollapseBtn.addEventListener("click", () => {
+    appEl.classList.add("toc-collapsed");
+    localStorage.setItem("tome-toc", "collapsed");
+  });
+}
+
+if (tocHamburger && appEl) {
+  tocHamburger.addEventListener("click", () => {
+    appEl.classList.remove("toc-collapsed");
+    localStorage.setItem("tome-toc", "open");
+    // Refresh the scroll-spy highlight now that the pane is visible again.
+    if (typeof updateTocActive === "function") updateTocActive();
+  });
+}
+
+// Restore saved state on load
+if (appEl && localStorage.getItem("tome-toc") === "collapsed") {
+  appEl.classList.add("toc-collapsed");
 }
 
 // ==========================================================================

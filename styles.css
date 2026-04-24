@@ -159,15 +159,30 @@ body {
 .app {
     height: 100%;
     display: grid;
-    grid-template-columns: var(--sidebar) 1fr;
+    grid-template-columns: var(--sidebar) 1fr var(--sidebar);
     transition: grid-template-columns 0.25s ease;
 }
 
 .app.sidebar-collapsed {
-    grid-template-columns: 0px 1fr;
+    grid-template-columns: 0px 1fr var(--sidebar);
 }
 
-/* Sidebar: scrollable, subtle background tint */
+/* Right column collapses in two distinct situations:
+    - toc-empty:      the current page has no sub-headings to list
+    - toc-collapsed:  the reader has explicitly collapsed the pane
+   Either is sufficient to hide it; the latter persists across pages. */
+.app.toc-empty,
+.app.toc-collapsed {
+    grid-template-columns: var(--sidebar) 1fr 0px;
+}
+
+.app.sidebar-collapsed.toc-empty,
+.app.sidebar-collapsed.toc-collapsed {
+    grid-template-columns: 0px 1fr 0px;
+}
+
+/* Sidebar: scrollable, subtle background tint. Shared styling for left
+   and right sidebars so the ToC pane mirrors the nav pane. */
 aside {
     border-right: 1px solid var(--border);
     background: rgba(255, 255, 255, 0.02);
@@ -177,11 +192,27 @@ aside {
     transition: opacity 0.2s ease, padding 0.25s ease;
 }
 
-.sidebar-collapsed aside {
+/* Right ToC pane: mirror of the left sidebar — same tint, border on the
+   opposite edge so it frames the main content symmetrically. */
+aside.toc-aside {
+    border-right: none;
+    border-left: 1px solid var(--border);
+}
+
+.sidebar-collapsed > aside:not(.toc-aside) {
     opacity: 0;
     padding: 0;
     pointer-events: none;
     border-right: none;
+}
+
+/* Hide the ToC pane for either reason (no content / user collapsed). */
+.toc-empty .toc-aside,
+.toc-collapsed .toc-aside {
+    opacity: 0;
+    padding: 0;
+    pointer-events: none;
+    border-left: none;
 }
 
 /* Main content pane: independently scrollable */
@@ -988,8 +1019,10 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
 
 .back-to-top {
     position: fixed;
+    /* Shifted inward from the right edge to clear the settings tab, which
+       now occupies roughly the outer 50px of the bottom-right corner. */
     bottom: 24px;
-    right: 24px;
+    right: 80px;
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -1110,44 +1143,50 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
    Auto-generated ToC from H3/H4/H5 headings within the rendered policy.
    ========================================================================== */
 
-.policy-toc {
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: rgba(125, 211, 252, 0.04);
-    padding: 12px 16px;
-    margin: 12px 0 20px;
-    font-size: 13px;
-}
-
-.policy-toc-title {
+/* Right-pane ToC heading. Mirrors the muted label styling used in the left
+   sidebar's brand block so the two panes visually match. */
+.toc-aside-title {
     font-weight: 700;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
+    padding: 4px 10px 10px;
+    border-bottom: 1px solid var(--border);
     margin: 0 0 8px;
 }
 
-.policy-toc a {
+/* ToC link list: styled to match the left sidebar's H2 links so both
+   panes feel like one coherent navigation surface. */
+.toc-nav a {
     display: block;
-    color: var(--link);
     text-decoration: none;
-    padding: 2px 0;
-    line-height: 1.4;
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    margin: 2px 6px;
+    font-size: 13px;
+    line-height: 1.35;
 }
 
-.policy-toc a:hover {
-    text-decoration: underline;
+.toc-nav a:hover {
+    border-color: rgba(125, 211, 252, 0.35);
+    background: rgba(125, 211, 252, 0.06);
 }
 
-/* Indent levels for sub-headings in the ToC */
-.policy-toc a[data-level="4"] {
-    padding-left: 16px;
+/* Scroll-spy: the heading currently in view is highlighted. */
+.toc-nav a.active {
+    border-color: rgba(125, 211, 252, 0.55);
+    background: rgba(125, 211, 252, 0.10);
+    color: var(--text);
+    font-weight: 600;
 }
 
-.policy-toc a[data-level="5"] {
-    padding-left: 32px;
-}
+/* Indent levels mirror the heading hierarchy inside the page. */
+.toc-nav a[data-level="3"] { padding-left: 10px; }
+.toc-nav a[data-level="4"] { padding-left: 26px; }
+.toc-nav a[data-level="5"] { padding-left: 42px; }
 
 /* ==========================================================================
    COPY / SHARE LINK ICON
@@ -1347,7 +1386,8 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
    ========================================================================== */
 
 /* Sidebar collapse toggle: visible on desktop, top of sidebar */
-.sidebar-collapse-btn {
+.sidebar-collapse-btn,
+.toc-collapse-btn {
     appearance: none;
     background: none;
     border: 1px solid var(--border);
@@ -1364,12 +1404,20 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
     transition: background 0.15s, color 0.15s;
 }
 
-.sidebar-collapse-btn:hover {
+/* Right-pane collapse button sits at the top of the ToC aside, pushed
+   to the right edge so it mirrors the left pane's button position. */
+.toc-collapse-btn {
+    margin-left: auto;
+}
+
+.sidebar-collapse-btn:hover,
+.toc-collapse-btn:hover {
     background: var(--h1bg);
     color: var(--text);
 }
 
-.nav-hamburger {
+.nav-hamburger,
+.toc-hamburger {
     display: none;
     appearance: none;
     background: var(--h1bg);
@@ -1382,7 +1430,6 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
     line-height: 1;
     position: fixed;
     top: 10px;
-    left: 10px;
     z-index: 9000;
     width: 28px;
     height: 24px;
@@ -1392,10 +1439,21 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
     transition: background 0.15s, color 0.15s;
 }
 
-.nav-hamburger:hover {
+.nav-hamburger { left: 10px; }
+.toc-hamburger { right: 10px; }
+
+.nav-hamburger:hover,
+.toc-hamburger:hover {
     background: var(--h1bg);
     color: var(--text);
     opacity: 1;
+}
+
+/* Show the right hamburger only when the pane is explicitly collapsed and
+   the current page actually has a ToC to reveal — never when the pane is
+   hidden because there's no content, and never on mobile. */
+.app.toc-collapsed:not(.toc-empty) .toc-hamburger {
+    display: flex;
 }
 
 /* Mobile nav backdrop */
@@ -1417,12 +1475,15 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
    ========================================================================== */
 
 @media (max-width: 980px) {
-    .app {
+    .app,
+    .app.sidebar-collapsed,
+    .app.toc-empty,
+    .app.sidebar-collapsed.toc-empty {
         grid-template-columns: 1fr;
     }
 
     /* Sidebar becomes a fixed left drawer */
-    aside {
+    aside:not(.toc-aside) {
         position: fixed;
         top: 0;
         left: 0;
@@ -1439,8 +1500,14 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
         overflow-y: auto;
     }
 
-    aside.drawer-open {
+    aside:not(.toc-aside).drawer-open {
         transform: translateX(0);
+    }
+
+    /* Right ToC pane is hidden below 980px — the main content already
+       scrolls on mobile and a third column would crowd the viewport. */
+    aside.toc-aside {
+        display: none;
     }
 
     /* Show hamburger on mobile */
@@ -1448,9 +1515,17 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
         display: flex;
     }
 
-    /* Hide sidebar collapse button on mobile (uses drawer instead) */
-    .sidebar-collapse-btn {
+    /* Hide internal collapse buttons on mobile (drawer handles the left
+       pane, the right pane is fully hidden). */
+    .sidebar-collapse-btn,
+    .toc-collapse-btn {
         display: none;
+    }
+
+    /* The right hamburger is hidden on mobile — the pane itself is hidden
+       below 980px so there's nothing to reopen. */
+    .toc-hamburger {
+        display: none !important;
     }
 }
 
@@ -1473,7 +1548,7 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
 
 .settings-btn-fixed {
     position: fixed;
-    top: -10px;
+    bottom: -10px;
     right: 6px;
     z-index: 200;
     appearance: none;
@@ -1490,18 +1565,23 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    box-shadow: -3px 3px 14px rgba(0, 0, 0, 0.4);
+    /* Shadow offsets mirrored on Y so the shadow still sits behind the
+       visible (upper) end of the tab after counter-clockwise rotation. */
+    box-shadow: -3px -3px 14px rgba(0, 0, 0, 0.4);
     opacity: 0.85;
-    transform: rotate(90deg);
+    /* Counter-clockwise rotation so flex-end content (the gear) ends up
+       at the TOP of the rotated pill, i.e. the visible end that pokes
+       into the viewport from the bottom edge. */
+    transform: rotate(-90deg);
     transform-origin: center center;
     transition: opacity 0.2s, color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
-/* Keep the gear icon upright */
+/* Keep the gear icon upright despite the -90deg container rotation. */
 .settings-btn-fixed::before {
     content: "\2699";
     display: block;
-    transform: rotate(-90deg);
+    transform: rotate(90deg);
 }
 
 .settings-btn-fixed:hover {
@@ -1509,7 +1589,7 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
     color: var(--heading);
     background: var(--h1bg);
     border-color: var(--heading);
-    box-shadow: -4px 4px 18px rgba(0, 0, 0, 0.5);
+    box-shadow: -4px -4px 18px rgba(0, 0, 0, 0.5);
 }
 
 .settings-backdrop {
@@ -1673,6 +1753,23 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
 .settings-action:hover {
     border-color: var(--link);
     background: rgba(125, 211, 252, 0.06);
+}
+
+.settings-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    cursor: pointer;
+}
+
+.settings-checkbox-label input[type="checkbox"] {
+    accent-color: var(--link);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
 }
 
 /* --- Guide tab --- */
@@ -1992,13 +2089,15 @@ main[data-width="wide"]   .wrap { max-width: 100%; }
     .settings-btn-fixed,
     .update-banner,
     .tome-overlay,
-    .policy-toc,
+    .toc-aside,
     .heading-link,
     .settings-panel,
     .settings-backdrop,
     .nav-backdrop,
     .nav-hamburger,
+    .toc-hamburger,
     .sidebar-collapse-btn,
+    .toc-collapse-btn,
     .cross-book-return {
         display: none !important;
     }
