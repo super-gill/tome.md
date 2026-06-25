@@ -1,10 +1,10 @@
-# tome.personal
+# tome-personal
 
 Personal books and notes. A **TOME instance**.
 
-This site is the platform from [`tome.platform`](https://github.com/super-gill/tome.platform)
+This site is the platform from [`tome-platform`](https://github.com/super-gill/tome-platform)
 plus this repo's own content. (Formerly `tome.md`, which used to double as the
-platform root; that role now lives in `tome.platform`.)
+platform root; that role now lives in `tome-platform`.)
 
 ## What lives here (per-instance content)
 
@@ -13,7 +13,7 @@ platform root; that role now lives in `tome.platform`.)
 - `export-branding/` - PDF brand presets
 
 Platform files (`index.html`, `index.js`, `styles.css`, `libs/`, `tools/`) come
-from `tome.platform`. Don't edit them here.
+from `tome-platform`. Don't edit them here.
 
 ## Updating the platform
 

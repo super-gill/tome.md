@@ -9,7 +9,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$Repo     = "super-gill/tome.platform"
+$Repo     = "super-gill/tome-platform"
 $Branch   = "main"
 $BaseUrl  = "https://raw.githubusercontent.com/$Repo/$Branch"
 $TreeUrl  = "https://api.github.com/repos/$Repo/git/trees/${Branch}?recursive=1"
