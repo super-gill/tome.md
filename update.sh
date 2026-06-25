@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-REPO="super-gill/tome.md"
+REPO="super-gill/tome.platform"
 BRANCH="main"
 BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
 TREE_URL="https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1"

@@ -169,8 +169,20 @@
   <!-- Mobile nav backdrop: shown when sidebar drawer is open -->
   <div id="navBackdrop" class="nav-backdrop" hidden></div>
 
-  <!-- Settings button: fixed top-right with tube extending to screen edge -->
+  <!-- Bottom-right pill buttons: settings (always visible) and matching
+       password-generator launcher to its left. Both are rotated pill tabs
+       that poke up from the bottom edge of the viewport. -->
   <button id="settingsBtn" class="settings-btn-fixed" type="button" title="Settings"></button>
+  <a id="passwordGenLink" class="password-btn-fixed" href="tools/password-generator.html" target="_blank"
+    rel="noopener noreferrer" title="Password generator (opens in new tab)" aria-label="Open password generator">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="8" cy="15" r="4" />
+      <line x1="10.85" y1="12.15" x2="19" y2="4" />
+      <line x1="18" y1="5" x2="20" y2="7" />
+      <line x1="15" y1="8" x2="17" y2="10" />
+    </svg>
+  </a>
 
   <!-- Back to top button: appears when main content is scrolled down -->
   <button id="backToTop" class="back-to-top" type="button" title="Back to top">&#8679;</button>
