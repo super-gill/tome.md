@@ -2,6 +2,32 @@
 
 ---
 
+## Contents
+
+- [1. Basics & Greetings](#1-basics--greetings)
+- [2. Grammar](#2-grammar)
+- [3. Verbs](#3-verbs)
+  - [Present Tense — Quick Reference](#present-tense-patterns--quick-reference)
+  - [Preterite (Simple Past)](#preterite-simple-past--quick-reference)
+  - [Conditional](#conditional--would)
+  - [Ser, Estar & Ser vs Estar](#ser--to-be-permanent)
+  - [Stem-Changing Verbs](#stem-changing-verbs-verbos-de-cambio-vocálico)
+- [4. Vocabulary](#4-vocabulary)
+  - [Family](#family-familia)
+  - [Weather](#weather-el-tiempo)
+  - [Days of the Week](#days-of-the-week-días-de-la-semana)
+  - [Telling the Time](#telling-the-time-la-hora)
+  - [Food](#food-comida)
+  - [The House](#the-house-en-la-casa)
+  - [The City](#the-city-la-ciudad)
+  - [Numbers](#numbers-los-números)
+  - [Connecting Words](#connecting-words-palabras-conectoras)
+  - [Questions](#questions-preguntando)
+- [5. Practice & Review](#5-practice--review)
+- [7. Vocabulary Quick Reference](#7-vocabulary-quick-reference)
+
+---
+
 ## 1. Basics & Greetings
 
 | Spanish | English |
@@ -142,19 +168,111 @@ Each verb shows a type label:
 
 ---
 
-### Ser — To Be
+### Preterite (Simple Past) — Quick Reference
+
+Used for completed past actions ("I ate", "we went").
+
+| | -AR (Hablar) | -ER / -IR (Comer / Vivir) |
+|---|---|---|
+| Yo | -é | -í |
+| Tú | -aste | -iste |
+| Él/Ella | -ó | -ió |
+| Nosotros | -amos | -imos |
+| Vosotros | -asteis | -isteis |
+| Ellos | -aron | -ieron |
+
+*Examples: Hablé con ella. Ayer comí paella. Vivimos en Madrid dos años.*
+
+**Common irregulars (memorise):**
+
+| Verb | Yo | Él/Ella | Ellos |
+|---|---|---|---|
+| Ser / Ir | fui | fue | fueron |
+| Tener | tuve | tuvo | tuvieron |
+| Estar | estuve | estuvo | estuvieron |
+| Hacer | hice | hizo | hicieron |
+| Poder | pude | pudo | pudieron |
+| Poner | puse | puso | pusieron |
+
+> **Ser** and **Ir** share the same preterite (fui, fuiste, fue...); context tells them apart.
+
+---
+
+### Conditional — "would"
+
+Used for hypotheticals and politeness ("I would put...", "would you...?").
+
+**Formation:** take the **whole infinitive** and add these endings (same for -ar, -er, -ir):
+
+| Person | Ending | Example (Poner) |
+|---|---|---|
+| Yo | -ía | pondría |
+| Tú | -ías | pondrías |
+| Él/Ella | -ía | pondría |
+| Nosotros | -íamos | pondríamos |
+| Vosotros | -íais | pondríais |
+| Ellos | -ían | pondrían |
+
+Most verbs simply add to the infinitive (hablar → hablaría, comer → comería). A dozen use an **irregular stem** (the same as the future tense):
+
+| Infinitive | Stem | Conditional (yo) |
+|---|---|---|
+| Poner | pondr- | pondría |
+| Tener | tendr- | tendría |
+| Hacer | har- | haría |
+| Decir | dir- | diría |
+| Poder | podr- | podría |
+| Querer | querr- | querría |
+| Venir | vendr- | vendría |
+
+*Ex. ¿Pondrías una planta en el dormitorio? — Sí, pondría una planta porque son bonitas.*
+
+---
+
+### Ser — To Be (permanent)
 > **Type:** Irregular
 
-| Pronoun (Es) | Pronoun (En) | Conjugation |
-|---|---|---|
-| Yo | I | Soy |
-| Tú | You | Eres |
-| Él/Ella | He/She | Es |
-| Nosotros | We | Somos |
-| Vosotros | You (pl) | Sois |
-| Ellos | They | Son |
+| Pronoun | English | Present | Preterite |
+|---|---|---|---|
+| Yo | I | Soy | Fui |
+| Tú | You | Eres | Fuiste |
+| Él/Ella | He/She | Es | Fue |
+| Nosotros | We | Somos | Fuimos |
+| Vosotros | You (pl) | Sois | Fuisteis |
+| Ellos | They | Son | Fueron |
 
-*Used for permanent characteristics: identity, nationality, job, personality.*
+*Used for permanent characteristics: identity, nationality, job, personality, time and dates.*
+
+---
+
+### Estar — To Be (temporary)
+> **Type:** Irregular
+
+| Pronoun | English | Present | Preterite |
+|---|---|---|---|
+| Yo | I | Estoy | Estuve |
+| Tú | You | Estás | Estuviste |
+| Él/Ella | He/She | Está | Estuvo |
+| Nosotros | We | Estamos | Estuvimos |
+| Vosotros | You (pl) | Estáis | Estuvisteis |
+| Ellos | They | Están | Estuvieron |
+
+*Used for location, temporary states, emotions and ongoing actions.*
+
+---
+
+### Ser vs Estar — which "to be"?
+
+| Use SER for | Use ESTAR for |
+|---|---|
+| Identity, description (Es alto) | Location (Está en casa) |
+| Nationality (Es española) | Emotions / feelings now (Estoy cansado) |
+| Job / profession (Soy profesor) | Temporary states (La sopa está caliente) |
+| Time & dates (Hoy es lunes) | Ongoing action (Está escribiendo) |
+
+**Same word, different meaning:** with some adjectives, **ser** = a permanent trait, **estar** = how it is right now.
+- *Ana **es** alegre* = Ana is a cheerful person by nature. / *Ana **está** alegre* = Ana is happy right now.
+- *El café **es** bueno* = the coffee is good quality. / *El café **está** bueno* = the coffee tastes good.
 
 ---
 
@@ -877,6 +995,142 @@ Useful questions:
 
 ---
 
+### The House (En La Casa)
+
+**Rooms:**
+
+| Spanish | English | Spanish | English |
+|---|---|---|---|
+| La cocina | Kitchen | El salón / la sala de estar | Living room |
+| El comedor | Dining room | El dormitorio | Bedroom |
+| El cuarto de baño | Bathroom | El aseo | Toilet (small) |
+| El pasillo | Hallway | El estudio | Office / study |
+| El garaje | Garage | El lavadero | Utility room |
+| La terraza | Terrace | | |
+
+**Furniture & objects:**
+
+| Spanish | English | Spanish | English |
+|---|---|---|---|
+| La cama | Bed | La mesilla de noche | Bedside table |
+| El armario | Wardrobe | La cómoda | Chest of drawers |
+| La estantería | Bookshelf | El estante | Shelf |
+| El sofá | Sofa | El sillón | Armchair |
+| La mesa | Table | La silla | Chair |
+| El escritorio | Desk | La silla de oficina | Office chair |
+| La lámpara | Lamp | La lámpara de pie | Floor lamp |
+| El espejo | Mirror | El cuadro | Picture / painting |
+| La alfombra | Rug | Las cortinas | Curtains |
+| La ventana | Window | La puerta | Door |
+| El ordenador | Computer | La impresora | Printer |
+| El horno | Oven | El microondas | Microwave |
+| El frigorífico / la nevera | Fridge | La vitrocerámica | Ceramic hob |
+| El fregadero | Kitchen sink | La encimera | Worktop |
+| El lavabo | Sink (bathroom) | La bañera | Bathtub |
+| La ducha | Shower | La toalla | Towel |
+| La lavadora | Washing machine | La secadora | Tumble dryer |
+| La cafetera | Coffee maker | La tostadora | Toaster |
+| El lavavajillas | Dishwasher | El cuchillo | Knife |
+| El tenedor | Fork | El plato | Plate |
+
+---
+
+### The City (La Ciudad)
+
+| Spanish | English | Spanish | English |
+|---|---|---|---|
+| El banco | Bank | La biblioteca | Library |
+| La farmacia | Pharmacy | El supermercado | Supermarket |
+| El mercado | Market | El centro comercial | Shopping centre |
+| El restaurante | Restaurant | El bar | Bar |
+| La cafetería | Café | La panadería | Bakery |
+| La carnicería | Butcher's | La tienda | Shop |
+| La tienda de ropa | Clothes shop | La zapatería | Shoe shop |
+| El gimnasio | Gym | El hospital | Hospital |
+| La clínica | Clinic | La comisaría | Police station |
+| La escuela | School | La iglesia | Church |
+| El parque | Park | La playa | Beach |
+| El museo | Museum | El cine | Cinema |
+| El teatro | Theatre | El estadio | Stadium |
+| El ayuntamiento | Town hall | Correos | Post office |
+| La estación de tren | Train station | La parada de autobús | Bus stop |
+| La gasolinera | Petrol station | El hotel | Hotel |
+| La frutería | Greengrocer | La piscina | Swimming pool |
+| El zoo | Zoo | | |
+
+---
+
+### Numbers (Los Números)
+
+| # | Spanish | # | Spanish |
+|---|---|---|---|
+| 0 | cero | 11 | once |
+| 1 | uno / un / una | 12 | doce |
+| 2 | dos | 13 | trece |
+| 3 | tres | 14 | catorce |
+| 4 | cuatro | 15 | quince |
+| 5 | cinco | 16 | dieciséis |
+| 6 | seis | 17 | diecisiete |
+| 7 | siete | 18 | dieciocho |
+| 8 | ocho | 19 | diecinueve |
+| 9 | nueve | 20 | veinte |
+| 10 | diez | | |
+
+**Tens:**
+
+| # | Spanish | # | Spanish |
+|---|---|---|---|
+| 30 | treinta | 70 | setenta |
+| 40 | cuarenta | 80 | ochenta |
+| 50 | cincuenta | 90 | noventa |
+| 60 | sesenta | 100 | cien |
+
+**Building numbers:**
+- 21–29 are one word: **veintiuno, veintidós, veintitrés...**
+- From 31 up, join with **y**: **treinta y uno, cuarenta y cinco, noventa y ocho.**
+- **100** alone is **cien**; with more it becomes **ciento**: *cien euros*, but *ciento veinte*.
+- Hundreds: doscientos, trescientos, cuatrocientos, **quinientos**, seiscientos, **setecientos**, ochocientos, **novecientos**. They agree in gender: *doscientas casas*.
+- **1000** = **mil** (never "un mil"): *mil, dos mil, mil novecientos noventa y nueve*.
+- **uno** shortens to **un** before a masculine noun (un euro, veintiún años) and becomes **una** before a feminine noun (una casa, veintiuna personas).
+
+---
+
+### Connecting Words (Palabras Conectoras)
+
+| Spanish | English | Spanish | English |
+|---|---|---|---|
+| y | and | pero | but |
+| porque | because | aunque | although |
+| entonces | so / then | también | also / as well |
+| tampoco | neither / not either | después | afterwards / then |
+| ahora | now | todavía | still / yet |
+| sin embargo | however | | |
+
+*Ex. Estudio español **porque** quiero viajar. / Estoy cansado, **sin embargo** voy a salir. / No tengo coche, **tampoco** tengo bicicleta.*
+
+---
+
+### Questions (Preguntando)
+
+**Question words:**
+
+| Spanish | English | Spanish | English |
+|---|---|---|---|
+| ¿Qué? | What? | ¿Quién? / ¿Quiénes? | Who? |
+| ¿Cómo? | How? | ¿Dónde? | Where? |
+| ¿Cuándo? | When? | ¿Por qué? | Why? |
+| ¿Cuántos/as? | How many? | ¿Cuánto/a? | How much? |
+| ¿Cuál? / ¿Cuáles? | Which? | | |
+
+**Forming questions:**
+- Spanish questions open with an inverted **¿** and close with **?**.
+- Question words carry a written accent (qué, quién, cómo, dónde, cuándo, cuál, cuánto), which their plain-word cousins (que, cuando, como...) do not.
+- **Por qué** (why) is two words; **porque** (because) is one.
+
+*Ex. ¿Dónde vives? ¿Cuántos años tienes? ¿Por qué estudias español? ¿Cuál es tu comida favorita? ¿Cómo estás hoy?*
+
+---
+
 ## 5. Practice & Review
 
 ### Review 1 — Correcting mistakes
@@ -1127,4 +1381,4 @@ All words from your lessons in one place. Cover one column and test yourself.
 
 ---
 
-*Last updated: April 2026*
+*Last updated: August 2026*
