@@ -6,6 +6,7 @@
 
 - [1. Basics & Greetings](#1-basics--greetings)
 - [2. Grammar](#2-grammar)
+  - [Possessive Adjectives](#possessive-adjectives-adjetivos-posesivos)
 - [3. Verbs](#3-verbs)
   - [Present Tense — Quick Reference](#present-tense-patterns--quick-reference)
   - [Preterite (Simple Past)](#preterite-simple-past--quick-reference)
@@ -135,6 +136,24 @@ In Spanish, nouns have gender. The article changes depending on gender and wheth
 | Gordo | Fat |
 | Bonito | Pretty |
 | Feo | Ugly |
+
+### Possessive Adjectives (Adjetivos Posesivos)
+
+Possessives go **before** the noun and agree with the **thing owned**, not the owner.
+
+| Owner | Singular noun | Plural noun |
+|---|---|---|
+| my | mi | mis |
+| your (tú) | tu | tus |
+| his / her / their / your (formal) | su | sus |
+| our | nuestro / nuestra | nuestros / nuestras |
+| your (vosotros) | vuestro / vuestra | vuestros / vuestras |
+
+- Only **nuestro** and **vuestro** change for gender (nuestra casa, nuestros libros); mi, tu and su change only for number.
+- **su / sus** is ambiguous: it can mean his, her, their or your (formal). Context usually makes it clear, or use *de él / de ella / de ellos* to be explicit.
+- Watch the accents: **tu** (your) vs **tú** (you); **mi** (my) vs **mí** (me).
+
+*Ex. Mi casa es grande. Mis llaves están en la mesa. ¿Dónde está tu coche? Nuestra ciudad es bonita. Vuestros libros están aquí. Sus hijos estudian español.*
 
 ---
 

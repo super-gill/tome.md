@@ -1120,6 +1120,58 @@ Copy
  
 ---
  
+## 9. Teriyaki Sauce
+ 
+*A proper from-scratch teriyaki sauce — sweet, glossy, and miles better than the bottled stuff.*
+ 
+**Makes:** ~150ml (enough for 1–2 servings) | **Time:** ~10 mins
+ 
+### Ingredients
+- 4 tbsp soy sauce
+- 3 tbsp mirin
+- 2 tbsp sake (or dry sherry, or water in a pinch)
+- 2 tbsp brown sugar
+- 1 garlic clove, grated
+- 1 tsp fresh ginger, grated
+- 1 tsp cornflour mixed with 1 tbsp cold water (to thicken)
+ 
+### Method
+1. **Combine the base** — In a small saucepan, whisk together soy sauce, mirin, sake, and brown sugar.
+2. **Add aromatics** — Stir in the grated garlic and ginger.
+3. **Simmer** — Bring to a gentle simmer over medium heat and cook for 3–4 minutes.
+4. **Thicken** — Give the cornflour slurry a quick stir (it settles) and pour it in while whisking. Simmer for another 1–2 minutes until glossy and thick enough to coat the back of a spoon.
+5. **Cool slightly** — Remove from the heat. It will thicken further as it cools.
+ 
+> **Tip:** Keeps in the fridge for up to a week in a sealed jar. This batch makes enough for the teriyaki chicken and rice recipe below, with a little extra for drizzling.
+ 
+---
+ 
+## 10. Teriyaki Chicken and Rice
+ 
+*Sticky, glossy chicken thighs over steamed rice — a proper midweek dinner in 30 minutes.*
+ 
+**Serves:** 1 | **Time:** ~30 mins
+ 
+### Ingredients
+- 200g chicken thighs, boneless and skinless, cut into bite-sized pieces
+- 1 tbsp vegetable or sunflower oil
+- 75g jasmine or short-grain rice
+- 1 batch teriyaki sauce (see recipe above)
+- 1 spring onion, sliced, to serve
+- 1 tsp sesame seeds, to serve
+- Steamed broccoli or edamame, to serve (optional)
+ 
+### Method
+1. **Cook the rice** — Rinse the rice until the water runs clear, then cook according to the packet instructions (or 1 part rice to 1.5 parts water, covered, on low heat for 12 minutes, then rest for 5).
+2. **Sear the chicken** — Heat the oil in a pan over medium-high heat. Add the chicken pieces in a single layer and sear for 4–5 minutes without moving them, until golden underneath.
+3. **Cook through** — Flip and cook for another 3–4 minutes until cooked through and golden all over.
+4. **Add the sauce** — Pour the teriyaki sauce over the chicken and toss to coat. Simmer for 2–3 minutes until the sauce thickens and clings to the chicken, glazing it.
+5. **Serve** — Spoon the rice into a bowl, top with the glazed chicken and any sauce left in the pan. Scatter with spring onion and sesame seeds. Serve with steamed broccoli or edamame if you like.
+ 
+> **Tip:** Chicken thighs stay juicier than breast here and take the glaze better. If using breast instead, watch the timing closely as it cooks faster and can dry out.
+ 
+---
+ 
 ## General tips that apply to all pasta dishes
  
 - **Always wait for a rolling boil** before adding pasta — big bubbles, not little ones. Starting pasta in cold or barely boiling water makes it gluey.
